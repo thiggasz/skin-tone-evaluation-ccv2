@@ -124,13 +124,7 @@ class FaceDetector:
             if face_crop is None: 
                 return None
             
-            aligned_crop, landmarks, M = self.align_face(face_crop)
-            if aligned_crop is None: 
-                return None
-            
-            final_face = self.get_final_crop(aligned_crop, landmarks, M)
-            
-            return final_face
+            return face_crop
             
         except cv2.error as e:
             print(f"OpenCv processing error: {e}")

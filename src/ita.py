@@ -24,18 +24,21 @@ def format_fitz(classification):
     tone_roman = ROMAN_SCALE.get(str(classification), "N/A")
     return tone_roman
 
-def calc_ita(median_bgr):
-    bgr_pixel = np.array([[median_bgr]], dtype=np.float32)
-    bgr_normalized = bgr_pixel / 255.0
-    lab_pixel = cv2.cvtColor(bgr_normalized, cv2.COLOR_BGR2LAB)
+def calc_ita(pixels_bgr):
+    pixels_bgr = np.array(pixels_bgr)
+    pixels_bgr = pixels_bgr.reshape(-1, 1, 3)
     
-    L = lab_pixel[0, 0, 0]
-    b = lab_pixel[0, 0, 2]
+    bgr_normalized = pixels_bgr.astype(np.float32) / 255.0
+    lab_pixels = cv2.cvtColor(bgr_normalized, cv2.COLOR_BGR2LAB)
     
-    if b == 0:
-        b = 1e-5
+    L = lab_pixels[:, 0, 0]
+    b = lab_pixels[:, 0, 2]
+    
+    b = np.where(b == 0, 1e-5, b)
         
-    ita = math.atan((L - 50) / b) * (180 / math.pi)
+    ita_values = np.arctan((L - 50) / b) * (180 / np.pi)
+
+    ita = np.median(ita_values)
     
     return ita
 
@@ -82,10 +85,10 @@ def run_ita(scale, result_path='results_ita.csv'):
                 print(f"Error: The image couldn't be read: {face_path}")
                 continue
             
-            median_bgr, teste = get_skin_pixels(img_face, img_mask)
+            skin_pixels= get_skin_pixels(img_face, img_mask)
         
-            if median_bgr is not None:
-                ita_value = calc_ita(median_bgr)
+            if skin_pixels is not None and len(skin_pixels) != 0:
+                ita_value = calc_ita(skin_pixels)
                 
                 if scale.lower() == 'monk':
                     tone_label = get_monk_type(ita_value, monk_thresholds)

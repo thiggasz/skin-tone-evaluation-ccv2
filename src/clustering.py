@@ -1,14 +1,12 @@
-import subprocess
 import os
 import cv2
 import csv
 from pathlib import Path
-import pandas as pd
 from tqdm import tqdm
 import numpy as np
-from sklearn.cluster import KMeans
 from src.pipeline.skin_extraction import get_skin_pixels
 from utils.utils import get_paths, get_file_paths
+from skimage.color import deltaE_ciede2000
 
 """
 
@@ -19,7 +17,7 @@ Classify skin tone based on the the centroid of the skin pixels clustering
 def hex_to_lab(hex_color):
     hex_color = hex_color.lstrip('#')
     rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-    bgr_pixel = np.uint8([[[rgb[2], rgb[1], rgb[0]]]])
+    bgr_pixel = np.float32([[[rgb[2], rgb[1], rgb[0]]]]) / 255.0
     lab_pixel = cv2.cvtColor(bgr_pixel, cv2.COLOR_BGR2LAB)[0][0]
     return lab_pixel
 
@@ -51,25 +49,28 @@ TONES = {
 }
 
 def clusterize_skin(skin_pixels, scale, clusters=3):
-    kmeans = KMeans(n_clusters=clusters, random_state=0, n_init="auto").fit(skin_pixels)
+    float_pixels = np.float32(skin_pixels)
     
-    # Find the dominat cluster
-    counts = np.bincount(kmeans.labels_)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1.0)
+    compactness, labels, centers = cv2.kmeans(float_pixels, clusters, None, criteria, 10, cv2.KMEANS_PP_CENTERS)
+    labels = labels.flatten()
+    
+    # Find the dominant cluster
+    counts = np.bincount(labels)
     dominant_cluster_index = np.argmax(counts)
-    dominant_color_bgr = kmeans.cluster_centers_[dominant_cluster_index]
+    dominant_color_bgr = centers[dominant_cluster_index]
     
     # Conversion to CIELAB
-    dominant_bgr_img = np.uint8([[dominant_color_bgr]])
+    dominant_bgr_img = np.float32([[dominant_color_bgr]]) / 255.0
     dominant_lab = cv2.cvtColor(dominant_bgr_img, cv2.COLOR_BGR2LAB)[0][0]
     
     selected_scale = TONES[scale]
     min_distance = float('inf')
     closest_match = None
     
-    # Compare the CIELAB value with the scale tones and classify skin tone
+    # Compares the CIELAB value with the scale tones and classify skin tone
     for name, (hex_val, scale_lab) in selected_scale.items():
-        # Usa o array LAB que já está pronto no dicionário!
-        distance = np.linalg.norm(dominant_lab.astype(float) - scale_lab.astype(float))
+        distance = deltaE_ciede2000(dominant_lab.astype(float), scale_lab.astype(float))
         
         if distance < min_distance:
             min_distance = distance
@@ -99,15 +100,16 @@ def run_clustering(scale, clusters=3, result_path='results_clustering.csv'):
                 print(f"Error: The image couldn't be read: {face_path}")
                 continue
             
-            _, skin_pixels = get_skin_pixels(img_face, img_mask)
+            skin_pixels = get_skin_pixels(img_face, img_mask)
             
-            tone_label, dominant_color = clusterize_skin(skin_pixels, scale, clusters)
-            
-            img_data = [
-                Path(path).name,
-                tone_label,
-                bgr_to_hex(dominant_color)
-            ]
+            if skin_pixels is not None and len(skin_pixels) != 0:
+                tone_label, dominant_color = clusterize_skin(skin_pixels, scale, clusters)
+                
+                img_data = [
+                    Path(path).name,
+                    tone_label,
+                    bgr_to_hex(dominant_color)
+                ]
         
-            writer.writerow(img_data)
+                writer.writerow(img_data)
     
