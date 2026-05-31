@@ -74,8 +74,9 @@ def get_file_paths(path_input):
     face_path = base_path / "Faces" / f"{safe_name}_face.png"
     skin_path = base_path / "Skins" / f"{safe_name}_skin.png"
     mask_path = base_path / "Masks" / f"{safe_name}_mask.png"
+    patch_path = base_path / "Patchs" / f"{safe_name}_patch.png"
     
-    return str(face_path), str(skin_path), str(mask_path)
+    return str(face_path), str(skin_path), str(mask_path), str(patch_path)
 
 if __name__ == "__main__":
     get_annotations()    

@@ -91,7 +91,7 @@ def run_clustering(scale, clusters=3, result_path='results_clustering.csv'):
             writer.writerow(columns)
 
         for path in tqdm(image_paths, desc=f"Calculating Clustering ({scale})"):
-            face_path, _, mask_path = get_file_paths(path)
+            face_path, _, mask_path, _ = get_file_paths(path)
             
             img_face = cv2.imread(face_path)
             img_mask = cv2.imread(mask_path)

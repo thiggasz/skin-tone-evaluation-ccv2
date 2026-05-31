@@ -76,7 +76,7 @@ def run_ita(scale, result_path='results_ita.csv'):
             writer.writerow(columns)
 
         for path in tqdm(image_paths, desc=f"Calculating ITA ({scale})"):
-            face_path, _, mask_path = get_file_paths(path)
+            face_path, _, mask_path, _ = get_file_paths(path)
 
             img_face = cv2.imread(face_path)
             img_mask = cv2.imread(mask_path)
