@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 def get_skin_pixels(img_face, img_mask, erosion_iters = 2):
-    """Given a image of segmentated skin, returns the median BGR color and a skin pixels array"""
+    """Given a face crop image and a binary mask, returns a skin pixels array"""
     
     if len(img_mask.shape) == 3:
         img_mask = cv2.cvtColor(img_mask, cv2.COLOR_BGR2GRAY)

@@ -89,7 +89,6 @@ def plot_predictions_range(df, attribute_column, ax=None):
     ax.set_ylabel('Images percentage (%)', fontsize=12)
     ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1.05, 1), title='Error level')
-
    
 def plot_quantitative_distribution(df, attribute_column, ax=None):
     if ax is None:
@@ -117,7 +116,6 @@ def plot_quantitative_distribution(df, attribute_column, ax=None):
     ax.set_xlabel(attribute_column.capitalize(), fontsize=12)
     ax.set_ylabel('Number of images', fontsize=12)
     ax.set_ylim(0, ax.get_ylim()[1] * 1.15)
-
    
 def plot_error_bias(df, true_label_column='true_label', error_column='error', ax=None):
     if ax is None:

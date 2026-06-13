@@ -6,10 +6,8 @@ import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import GroupKFold
+from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
@@ -188,7 +186,7 @@ def create_features_file(result_path='features.csv'):
                 
                 writer.writerow(img_data)
 
-def random_forest(scale):
+def random_forest(scale, features_importance=False):
     features_df = pd.read_csv(FEATURES_FILE)
     features_df = features_df.copy()
 
@@ -201,64 +199,55 @@ def random_forest(scale):
     groups = features_df['subject_id']
 
     n_splits = 5
-    gkf = GroupKFold(n_splits=n_splits)
+    sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
     y_true_all = []
     y_pred_all = []
+    files_all = []
     importances_all = []
 
     model = RandomForestClassifier(
-        n_estimators=150,
-        max_depth=15,
-        min_samples_leaf=2,
+        n_estimators=500,
         class_weight='balanced',
         random_state=42,
         n_jobs=-1
     )
 
-    print(f"Running Random Forest with ({n_splits} folds for the {scale}")
-
-    for fold, (train_idx, test_idx) in enumerate(gkf.split(X, y, groups), 1):
+    for fold, (train_idx, test_idx) in enumerate(sgkf.split(X, y, groups), 1):
         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+        files_test = features_df['file'].iloc[test_idx]
 
         model.fit(X_train, y_train)
-
         y_pred = model.predict(X_test)
 
         y_true_all.extend(y_test)
         y_pred_all.extend(y_pred)
+        files_all.extend(files_test)
         importances_all.append(model.feature_importances_)
 
-    classes = np.unique(y)
+    df_results = pd.DataFrame({
+        'file': files_all,
+        'true_label': y_true_all,
+        'predicted_label': y_pred_all
+    })
 
-    print(classification_report(y_true_all, y_pred_all))
+    if features_importance:
+        avg_importances = np.mean(importances_all, axis=0)
+        feature_names = X.columns
+        
+        indices = np.argsort(avg_importances)[::-1][:20]
+        num_top_features = len(indices)
 
-    cm = confusion_matrix(y_true_all, y_pred_all, labels=classes, normalize='true')
+        plt.figure(figsize=(10, 6))
+        plt.title(f"Features importance (Top 20) - Scale {scale.capitalize()}")
+        plt.bar(range(num_top_features), avg_importances[indices], align="center")
+        plt.xticks(range(num_top_features), [feature_names[i] for i in indices], rotation=90)
+        plt.xlim([-1, num_top_features])
+        plt.tight_layout()
+        plt.show()
     
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='.2f', cmap='Blues', 
-                xticklabels=classes, 
-                yticklabels=classes)
-    plt.xlabel("Predicted label")
-    plt.ylabel("True label")
-    plt.tight_layout()
-    plt.show()
-
-    avg_importances = np.mean(importances_all, axis=0)
-    feature_names = X.columns
-    
-    indices = np.argsort(avg_importances)[::-1][:20]
-    num_top_features = len(indices)
-
-    plt.figure(figsize=(10, 6))
-    plt.title(f"Features importance (Top 20) - Scale {scale.capitalize()}")
-    
-    plt.bar(range(num_top_features), avg_importances[indices], align="center")
-    plt.xticks(range(num_top_features), [feature_names[i] for i in indices], rotation=90)
-    plt.xlim([-1, num_top_features])
-    plt.tight_layout()
-    plt.show()
+    return df_results
     
 def mlp_classifier(scale):
     features_df = pd.read_csv(FEATURES_FILE)
@@ -273,46 +262,41 @@ def mlp_classifier(scale):
     groups = features_df['subject_id']
     
     n_splits = 5
-    gkf = GroupKFold(n_splits=n_splits)
+    sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=42)
     
     y_true_all = []
     y_pred_all = []
+    files_all = []
 
     scaler = StandardScaler()
 
     model = MLPClassifier(
-        hidden_layer_sizes=(100, 50),
+        hidden_layer_sizes=(128, 64, 32),
         activation='relu',
         solver='adam',
         max_iter=1000,
         random_state=42
     )
-
-    for fold, (train_idx, test_idx) in enumerate(gkf.split(X, y, groups), 1):
+    
+    for fold, (train_idx, test_idx) in enumerate(sgkf.split(X, y, groups), 1):
         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+        files_test = features_df['file'].iloc[test_idx]
 
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
 
         model.fit(X_train_scaled, y_train)
-
         y_pred = model.predict(X_test_scaled)
 
         y_true_all.extend(y_test)
         y_pred_all.extend(y_pred)
+        files_all.extend(files_test)
 
-    classes = np.unique(y)
+    df_results = pd.DataFrame({
+        'file': files_all,
+        'true_label': y_true_all,
+        'predicted_label': y_pred_all
+    })
     
-    print(classification_report(y_true_all, y_pred_all))
-
-    cm = confusion_matrix(y_true_all, y_pred_all, labels=classes, normalize='true')
-    
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='.2f', cmap='Blues', 
-                xticklabels=classes, 
-                yticklabels=classes)
-    plt.xlabel("Predicted label")
-    plt.ylabel("True label")
-    plt.tight_layout()
-    plt.show()
+    return df_results
