@@ -74,9 +74,45 @@ def get_file_paths(path_input):
     face_path = base_path / "Faces" / f"{safe_name}_face.png"
     skin_path = base_path / "Skins" / f"{safe_name}_skin.png"
     mask_path = base_path / "Masks" / f"{safe_name}_mask.png"
-    patch_path = base_path / "Patchs" / f"{safe_name}_patch.png"
     
-    return str(face_path), str(skin_path), str(mask_path), str(patch_path)
+    return str(face_path), str(skin_path), str(mask_path)
+
+def get_train_metadata(result_path='train-metadata.csv'):
+    label_file = r'C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2\ccv2_filtered.csv'
+    paths = get_paths()
+        
+    df_labels = pd.read_csv(label_file, dtype={'subject_id': str})
+    
+    file_exists = os.path.exists(result_path)
+    
+    with open(result_path, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        
+        if not file_exists:
+            writer.writerow(['subject_id', 'fitzpatrick_type', 'monk_scale', 'file_path'])
+    
+        for path in paths:
+            _, skin_path, _ = get_file_paths(path)
+            
+            subject_id = Path(path).stem[:4]
+            
+            subject_row = df_labels[df_labels['subject_id'] == subject_id]
+            
+            if not subject_row.empty:
+                fitzpatrick = subject_row['fitzpatrick_type'].values[0]
+                monk = subject_row['monk_scale'].values[0]
+                
+                img_data = [
+                    subject_id,
+                    fitzpatrick,
+                    monk,
+                    os.path.basename(skin_path)
+                ]
+                
+                writer.writerow(img_data)
+            else:
+                print(f"Aviso: subject_id {subject_id} não encontrado no arquivo de labels.")
+            
 
 if __name__ == "__main__":
-    get_annotations()    
+    get_annotations()
