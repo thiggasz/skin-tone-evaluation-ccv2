@@ -6,8 +6,8 @@ from typing import List
 from tqdm import tqdm
 from src.pipeline.face_detection import FaceDetector
 
-TRUE_FILE = r'C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2\ccv2_filtered.csv'
-FOLDERS = r'C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\paths\folders.txt'
+TRUE_FILE = ' '
+FOLDERS = ' '
 
 FRAMES_PER_CLASS_FITZ = {
     'type i': 10, 'type ii': 2, 'type iii': 1, 

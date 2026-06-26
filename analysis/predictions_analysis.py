@@ -7,8 +7,8 @@ from analysis.results_analysis import get_matrix_file
 
 sns.set_theme(style="whitegrid", palette="muted")
 
-TRUE_FILE = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2\ccv2_filtered.csv"
-ANALYSIS_FILE = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\results\ccv2_analysis.csv"
+TRUE_FILE = ' '
+ANALYSIS_FILE = ' '
 
 def plot_correlation_heatmap(df, interest_columns, ax=None):
     if ax is None:

@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 
 def get_folders(dataset):
-    root_dir = os.path.join(r"C:\Users\thiag\Dataset CCv2", dataset)
+    root_dir = os.path.join(' ', dataset)
 
     output_file = "paths.txt"
 
@@ -18,8 +18,8 @@ def get_folders(dataset):
     print(f"Paths saved in: {output_file}")
     
 def get_annotations(): 
-    input_file = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\CasualConversationsV2.json"
-    output_file = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2_skin_tones.csv"
+    input_file = ' '
+    output_file = ' '
 
     with open(input_file, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -38,7 +38,7 @@ def get_annotations():
             writer.writerow([subject_id, fitz_type, fitz_conf, monk_scale, monk_conf])
 
 def get_label():
-    input_file = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2_skin_tones.csv"
+    input_file = ' '
     df = pd.read_csv(input_file, header=None)
 
     df.columns = ['subject_id','fitzpatrick_type','fitzpatrick_confidence','monk_scale','monk_confidence']
@@ -54,7 +54,7 @@ def get_label():
     print(result.head())
 
 def get_paths():
-    input_file = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\paths\filtered.txt"
+    input_file = ' '
     
     if not os.path.exists(input_file):
         print(f"{input_file} not found.")
@@ -66,7 +66,7 @@ def get_paths():
     return image_paths
 
 def get_file_paths(path_input):
-    base_path = Path(r'C:\Users\thiag\Dataset CCv2')
+    base_path = Path(' ')
     original_path = Path(path_input)
     
     safe_name = original_path.stem
@@ -78,7 +78,7 @@ def get_file_paths(path_input):
     return str(face_path), str(skin_path), str(mask_path)
 
 def get_train_metadata(result_path='train-metadata.csv'):
-    label_file = r'C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2\ccv2_filtered.csv'
+    label_file = ' '
     paths = get_paths()
         
     df_labels = pd.read_csv(label_file, dtype={'subject_id': str})

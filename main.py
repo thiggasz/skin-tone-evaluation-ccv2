@@ -9,9 +9,9 @@ from src.clustering import run_clustering
 from src.ita import run_ita
 from analysis.results_analysis import analyse_results
 
-FACE_FOLDER = r"C:\Users\thiag\Dataset CCv2\Faces"
-SKIN_FOLDER = r"C:\Users\thiag\Dataset CCv2\Skins"
-MASK_FOLDER = r"C:\Users\thiag\Dataset CCv2\Masks"
+FACE_FOLDER = ' '
+SKIN_FOLDER = ' '
+MASK_FOLDER = ' '
 
 def detect_faces(face_folder, skin_folder, mask_folder, batch_size):                      
     os.makedirs(face_folder, exist_ok=True)

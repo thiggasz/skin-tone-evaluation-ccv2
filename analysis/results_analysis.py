@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report, accuracy_score, f1_score, cohen_kappa_score, mean_absolute_error, mean_squared_error
 
-TRUE_FILE = r'C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2\ccv2_filtered.csv'
-FEATURES_FILE = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\results\features.csv"
+TRUE_FILE = ' '
+FEATURES_FILE = ' '
 
 def calculate_error(pred, true):
     ROMAN_SCALE = {

@@ -8,3 +8,4 @@ src/models/
 .vscode
 *.csv
 cnn
+stats

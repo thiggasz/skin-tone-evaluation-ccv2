@@ -15,8 +15,8 @@ from utils.utils import get_paths, get_file_paths
 from scipy import stats
 from analysis.results_analysis import get_classification_metrics
 
-TRUE_FILE = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2\ccv2_filtered.csv"
-FEATURES_FILE = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\results\features.csv"
+TRUE_FILE = ' '
+FEATURES_FILE = ' '
 
 def get_moments(channel_pixels):
     flatten_pixels = channel_pixels.flatten()

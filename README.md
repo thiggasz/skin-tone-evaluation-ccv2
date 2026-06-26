@@ -1,0 +1,6 @@
+# Análise Comparativa do Desempenho de Abordagens Computacionais na Inferência do Tom de Pele Aparente
+
+Repositório relativo Trabalho de Conclusão de Curso intitulado "Análise Comparativa do Desempenho de Abordagens Computacionais na Inferência do Tom de Pele Aparente", apresentado ao Departamento de Informática (DPI) da Universidade Federal de Viçosa (UFV) como requisito parcial para a obtenção do título de Bacharel em Ciência da Computação.
+
+## Resumo 
+A análise de tom de pele aparente por meio de ferramentas computacionais tem o potencial de automatizar e tornar mais precisa a classificação do tom de pele de indivíduos, sendo esta uma tarefa relevante em diversas áreas do conhecimento. Entretanto, a qualidade da predição é sensível à natureza dos dados, podendo ser influenciada por variações de iluminação, pose e qualidade da imagem, especialmente se obtidas em ambientes não controlados. Sendo assim, o presente estudo buscou comparar o desempenho de abordagens computacionais na inferência de tom de pele aparente nesses ambientes, avaliando o impacto do uso de diferentes escalas de classificação. De forma geral, os resultados apontaram que abordagens baseadas em aprendizado, especialmente aprendizado profundo, têm a capacidade de gerar bons resultados, mas ainda assim apresentam precisão insatisfatória para aplicação em contextos reais.

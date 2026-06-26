@@ -1,2 +1,2 @@
-LANDMARK_5_PREDICTOR_PATH = r"C:\Users\thiag\Documents\Faculdade\TCC\skin_tone\src\models\shape_predictor_5_face_landmarks.dat"
-LANDMARK_68_PREDICTOR_PATH = r"C:\Users\thiag\Documents\Faculdade\TCC\skin_tone\src\models\shape_predictor_68_face_landmarks.dat"
+LANDMARK_5_PREDICTOR_PATH = ' '
+LANDMARK_68_PREDICTOR_PATH = ' '
