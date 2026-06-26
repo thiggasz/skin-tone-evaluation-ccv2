@@ -10,10 +10,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
-import seaborn as sns
 from src.pipeline.skin_extraction import get_skin_pixels
 from utils.utils import get_paths, get_file_paths
 from scipy import stats
+from analysis.results_analysis import get_classification_metrics
 
 TRUE_FILE = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2\ccv2_filtered.csv"
 FEATURES_FILE = r"C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\results\features.csv"
@@ -205,6 +205,7 @@ def random_forest(scale, features_importance=False):
     y_pred_all = []
     files_all = []
     importances_all = []
+    metrics_records = []
 
     model = RandomForestClassifier(
         n_estimators=500,
@@ -221,6 +222,16 @@ def random_forest(scale, features_importance=False):
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
+        df_fold = pd.DataFrame({
+            'file': files_test,
+            'true_label': y_test,
+            'predicted_label': y_pred
+        })
+        
+        fold_metrics = get_classification_metrics(df_fold, scale=scale, display=False)
+        fold_metrics['Fold'] = f"Fold {fold}"
+        metrics_records.append(fold_metrics)
+
         y_true_all.extend(y_test)
         y_pred_all.extend(y_pred)
         files_all.extend(files_test)
@@ -231,7 +242,19 @@ def random_forest(scale, features_importance=False):
         'true_label': y_true_all,
         'predicted_label': y_pred_all
     })
+    df_results.to_csv(f'df_rf_{scale}_oof.csv', index=False)
+    
+    oof_metrics = get_classification_metrics(df_results, scale=scale)
+    oof_metrics['Fold'] = "OOF Geral"
+    metrics_records.append(oof_metrics)
+    
+    df_metrics = pd.DataFrame(metrics_records)
 
+    cols = ['Fold', 'Accuracy', 'Macro F1', 'Off-by-One', 'M-MAE', 'M-MSE', 'QWK']
+    df_metrics = df_metrics[cols]
+
+    df_metrics.to_csv(f'df_rf_{scale}_metrics.csv', index=False)
+   
     if features_importance:
         avg_importances = np.mean(importances_all, axis=0)
         feature_names = X.columns
@@ -246,8 +269,6 @@ def random_forest(scale, features_importance=False):
         plt.xlim([-1, num_top_features])
         plt.tight_layout()
         plt.show()
-    
-    return df_results
     
 def mlp_classifier(scale):
     features_df = pd.read_csv(FEATURES_FILE)
@@ -267,6 +288,8 @@ def mlp_classifier(scale):
     y_true_all = []
     y_pred_all = []
     files_all = []
+    
+    metrics_records = []
 
     scaler = StandardScaler()
 
@@ -289,6 +312,16 @@ def mlp_classifier(scale):
         model.fit(X_train_scaled, y_train)
         y_pred = model.predict(X_test_scaled)
 
+        df_fold = pd.DataFrame({
+            'file': files_test,
+            'true_label': y_test,
+            'predicted_label': y_pred
+        })
+        
+        fold_metrics = get_classification_metrics(df_fold, scale=scale, display=False)
+        fold_metrics['Fold'] = f"Fold {fold}"
+        metrics_records.append(fold_metrics)
+
         y_true_all.extend(y_test)
         y_pred_all.extend(y_pred)
         files_all.extend(files_test)
@@ -299,4 +332,15 @@ def mlp_classifier(scale):
         'predicted_label': y_pred_all
     })
     
-    return df_results
+    df_results.to_csv(f'df_mlp_{scale}_oof.csv', index=False)
+    
+    oof_metrics = get_classification_metrics(df_results, scale=scale)
+    oof_metrics['Fold'] = "OOF Geral"
+    metrics_records.append(oof_metrics)
+    
+    df_metrics = pd.DataFrame(metrics_records)
+    
+    cols = ['Fold', 'Accuracy', 'Macro F1', 'Off-by-One', 'M-MAE', 'M-MSE', 'QWK']
+    df_metrics = df_metrics[cols]
+    
+    df_metrics.to_csv(f'df_mlp_{scale}_metrics.csv', index=False)
