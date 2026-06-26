@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
-from src.machine_learning import random_forest, mlp_classifier
 from sklearn.metrics import classification_report, accuracy_score, f1_score, cohen_kappa_score, mean_absolute_error, mean_squared_error
 
 TRUE_FILE = r'C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\files\ccv2\ccv2_filtered.csv'
@@ -98,13 +98,11 @@ def get_confusion_matrix(df_matrix, title):
 
     # plt.title(title)
     plt.show()
- 
-import pandas as pd
 
-def preprocess_labels(df, scale_type='fitzpatrick'):
+def preprocess_labels(df, scale_type='fitzpatrick_type'):
     df_clean = df.copy()
     
-    if scale_type == 'fitzpatrick':
+    if scale_type == 'fitzpatrick_type':
         fitz_map = {
             'type i': 1,
             'type ii': 2,
@@ -117,22 +115,23 @@ def preprocess_labels(df, scale_type='fitzpatrick'):
         df_clean['true_label'] = df_clean['true_label'].str.lower().map(fitz_map)
         df_clean['predicted_label'] = df_clean['predicted_label'].str.lower().map(fitz_map)
         
-    elif scale_type == 'monk':
+    elif scale_type == 'monk_scale':
         df_clean['true_label'] = df_clean['true_label'].str.lower().str.replace('scale ', '').astype(int)
         
         df_clean['predicted_label'] = df_clean['predicted_label'].str.lower().str.replace('scale ', '').astype(int)
         
     return df_clean
    
-def get_classification_metrics(df_matrix, scale):
+def get_classification_metrics(df_matrix, scale, display=True):
     df_matrix_formated = preprocess_labels(df_matrix, scale_type=scale)
     
     y_true = df_matrix_formated['true_label'].astype(int)
     y_pred = df_matrix_formated['predicted_label'].astype(int)
     
-    print("--- Classification Report ---")
-    labels = sorted(y_true.unique())
-    print(classification_report(y_true, y_pred, labels=labels, zero_division=0))
+    if display:
+        print("--- Classification Report ---")
+        labels = sorted(y_true.unique())
+        print(classification_report(y_true, y_pred, labels=labels, zero_division=0))
     
     acc = accuracy_score(y_true, y_pred)
     macro_f1 = f1_score(y_true, y_pred, average='macro', zero_division=0)
@@ -157,13 +156,14 @@ def get_classification_metrics(df_matrix, scale):
     m_mae = np.mean(mae_per_class)
     m_mse = np.mean(mse_per_class)
     
-    print("\n--- Ordinal Metrics ---")
-    print(f"Global Accuracy:            {acc:.4f}")
-    print(f"Macro F1-Score:             {macro_f1:.4f}")
-    print(f"Off-by-One Accuracy:        {off_by_one:.4f}")
-    print(f"Macro Mean Absolute Error:  {m_mae:.4f}")
-    print(f"Macro Mean Quadratic Error: {m_mse:.4f}")
-    print(f"Quadratic Weighted Kappa:   {qwk:.4f}")
+    if display:
+        print("\n--- Ordinal Metrics ---")
+        print(f"Global Accuracy:            {acc:.4f}")
+        print(f"Macro F1-Score:             {macro_f1:.4f}")
+        print(f"Off-by-One Accuracy:        {off_by_one:.4f}")
+        print(f"Macro Mean Absolute Error:  {m_mae:.4f}")
+        print(f"Macro Mean Quadratic Error: {m_mse:.4f}")
+        print(f"Quadratic Weighted Kappa:   {qwk:.4f}")
     
     return {
         'Accuracy': acc,
@@ -175,10 +175,9 @@ def get_classification_metrics(df_matrix, scale):
     }
     
 def analyse_results(predicions_file, method, scale, save_file=False):
-    matrix_scale = 'monk_scale' if scale == 'monk' else 'fitzpatrick_type'
     title = f'Matriz de confusão {method.capitalize()} na escala {scale.capitalize()}'
     
-    df_matrix = get_matrix_file(predicions_file, matrix_scale, save_file)
+    df_matrix = get_matrix_file(predicions_file, scale, save_file)
     
     get_classification_metrics(df_matrix, scale)
     
@@ -190,48 +189,54 @@ def analyse_ml_results(df_results, method, scale):
     get_classification_metrics(df_results, scale)
     
     get_confusion_matrix(df_results, title)
+
+def calculate_confidence_intervals(csv_path, is_cnn=True, confidence_level=0.95):
+    df_results = pd.read_csv(csv_path)
     
-def generate_predicitions_intersection(scale):
-    full_scale = 'monk_scale' if scale == 'monk' else 'fitzpatrick_type'
+    if is_cnn:
+        df_test = df_results[df_results['Fold'].astype(str).str.contains(r'\(Test\)', na=False)].copy()
+    else:
+        df_test = df_results[df_results['Fold'].astype(str).str.contains('Fold', na=False)].copy()
     
-    print("Running Random Forest...")
-    preds_rf = random_forest(full_scale)
+    metric_cols = [c for c in df_test.columns if c not in ['Fold']]
+
+    n_folds = len(df_test)
+    degrees_of_freedom = n_folds - 1
+    t_critical = stats.t.ppf((1 + confidence_level) / 2, degrees_of_freedom)
     
-    print("Running MLP...")
-    preds_mlp = mlp_classifier(full_scale)
+    print(f"\nCalculando IC de {confidence_level*100:.0f}% (T-Student) para {n_folds} Folds...")
     
-    # 1. Carregar o DataFrame base do arquivo de features
-    df_base = pd.read_csv(FEATURES_FILE)[['file', full_scale]].rename(columns={full_scale: 'true_label'})
+    summary_stats = []
+
+    for col in metric_cols:
+        values = pd.to_numeric(df_test[col])
+        
+        mean = values.mean()
+        std_dev = values.std(ddof=1)
+        
+        if pd.isna(std_dev) or std_dev == 0.0:
+            std_error = 0.0
+            margin_of_error = 0.0
+        else:
+            std_error = std_dev / np.sqrt(n_folds)
+            margin_of_error = t_critical * std_error
+
+        lower_bound = mean - margin_of_error
+        upper_bound = mean + margin_of_error
+
+        format_tcc = f"{mean:.4f} ± {margin_of_error:.4f}"
+
+        summary_stats.append({
+            'Metric': col,
+            'Mean': mean,
+            'Std': std_dev,
+            'Error': std_error,
+            'CI_95%_Lower': lower_bound,
+            'CI_95%_Upper': upper_bound,
+            'Margin_Error': margin_of_error,
+            'Format_TCC': format_tcc
+        })
+
+    df_summary = pd.DataFrame(summary_stats)
     
-    # 2. Mapear as predições do RF e MLP (que estão na memória) para o DataFrame base
-    df_base['pred_rf'] = df_base['file'].map(preds_rf)
-    df_base['pred_mlp'] = df_base['file'].map(preds_mlp)
-    
-    # 3. Carregar os dois métodos que já estão em CSV 
-    ITA_FILE = rf'C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\results\ita\ita_{scale}.csv'
-    CLUSTERING_FILE = rf'C:\Users\thiag\Documents\Faculdade\TCC\TCC-Inferencia-de-Tom-de-Pele\results\cluster\clustering_{scale}.csv'
-    
-    df_csv1 = pd.read_csv(ITA_FILE) 
-    df_csv2 = pd.read_csv(CLUSTERING_FILE)
-    
-    # 4. Combinar usando INNER JOIN para garantir que apenas arquivos que existam em TODOS os métodos fiquem no DataFrame
-    df_base = df_base.merge(df_csv1[['file', 'tone label']].rename(columns={'tone label': 'pred_metodo3'}), on='file', how='inner')
-    df_base = df_base.merge(df_csv2[['file', 'tone label']].rename(columns={'tone label': 'pred_metodo4'}), on='file', how='inner')
-    
-    # [CRUCIAL] Remover qualquer linha que tenha ficado com valor nulo antes de converter para string
-    df_base = df_base.dropna()
-    
-    # 5. PADRONIZAÇÃO DE TEXTO: Forçar tudo para string, remover espaços e colocar em minúsculo
-    colunas_labels = ['true_label', 'pred_rf', 'pred_mlp', 'pred_metodo3', 'pred_metodo4']
-    for col in colunas_labels:
-        df_base[col] = df_base[col].astype(str).str.strip().str.lower()
-    
-    # 6. Criar a matriz Booleana de ACERTOS baseada nos dados do df_base
-    df_intersecao = pd.DataFrame()
-    df_intersecao['file'] = df_base['file'].values  # Mantém como coluna comum por enquanto
-    df_intersecao['Random Forest'] = (df_base['pred_rf'] == df_base['true_label']).values
-    df_intersecao['MLP'] = (df_base['pred_mlp'] == df_base['true_label']).values
-    df_intersecao['ITA'] = (df_base['pred_metodo3'] == df_base['true_label']).values
-    df_intersecao['Clustering'] = (df_base['pred_metodo4'] == df_base['true_label']).values
-    
-    return df_intersecao, df_base
+    return df_summary
